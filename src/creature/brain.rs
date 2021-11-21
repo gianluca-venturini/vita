@@ -17,6 +17,7 @@ impl BrainDescription {
 	}
 }
 
+#[derive(Debug)]
 pub struct Brain {
 	input: Vec<Neuron>,
 	internal: Vec<Neuron>,
@@ -24,7 +25,7 @@ pub struct Brain {
 }
 
 impl Brain {
-	pub fn init(description: BrainDescription) -> Brain {
+	pub fn init(num_internal: u8) -> Brain {
 		Brain {
 			input: INPUT_NEURONS
 				.to_vec()
@@ -50,18 +51,19 @@ impl Brain {
 					value: 0f32,
 					neuron_layer: NeuronLayer::Internal,
 				};
-				description.num_internal as usize
+				num_internal as usize
 			],
 		}
 	}
 
 	pub fn compute_neurons_state(&mut self, genes: &Vec<Gene>) {
 		// Reset all neurons
-		// IDEA: maybe these neuron layer should be set outside and we can avoid touching it here
-		self.reset_neurons_layer(NeuronLayer::Input);
 		self.reset_neurons_layer(NeuronLayer::Internal);
 		self.reset_neurons_layer(NeuronLayer::Output);
 		let connections = self.get_connection_from_genes(genes);
+
+		println!("{:?}", connections);
+		println!("{:?}", self);
 
 		// Compute all neurons with input layer source
 		self.compute_normalized_sum_on_destination_neurons(
@@ -74,6 +76,8 @@ impl Brain {
 			NeuronLayer::Input,
 			NeuronLayer::Output,
 		);
+
+		println!("{:?}", self);
 
 		// Compute all internal neurons that are connected to intermediate neurons
 		self.compute_normalized_sum_on_destination_neurons(
@@ -119,29 +123,33 @@ impl Brain {
 			if connection.source.neuron_layer == source_layer
 				&& connection.destination.neuron_layer == destination_layer
 			{
-				let mut weightedValue = 0f32;
+				let weighted_value: f32;
 				{
 					let source = self.desc_to_neuron(&connection.source);
-					weightedValue = source.value * connection.weight;
+					println!("source: {:?}, value: {}", connection.source, source.value);
+					weighted_value = source.value * connection.weight;
 				}
-				let destination = self.desc_to_neuron(&connection.destination);
 				changes.insert(
 					// accumulate the value
 					connection.destination.neuron_number,
 					match changes.get(&connection.destination.neuron_number) {
 						Some(x) => *x,
 						None => 0f32,
-					} + weightedValue,
+					} + weighted_value,
 				);
 			}
 		}
 		// Now is safe to apply the changes
-		for (neuron_number, valueChange) in changes.iter_mut() {
+		for (neuron_number, value_change) in changes.iter_mut() {
+			println!(
+				"neuron_number: {}, value_change: {}",
+				neuron_number, value_change
+			);
 			let neuron = self.desc_to_neuron(&NeuronDescription {
 				neuron_number: *neuron_number,
 				neuron_layer: destination_layer,
 			});
-			neuron.value = (neuron.value.atanh() + *valueChange).tanh();
+			neuron.value = (neuron.value.atanh() + *value_change).tanh();
 		}
 	}
 
@@ -189,7 +197,7 @@ pub enum NeuronLayer {
 	Output,
 }
 
-#[derive(Clone, std::hash::Hash)]
+#[derive(Clone, std::hash::Hash, Debug)]
 pub enum NeuronType {
 	// Input
 	Random,
@@ -229,15 +237,36 @@ pub struct NeuronDescription {
 	pub neuron_number: u8,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Neuron {
 	neuron_type: NeuronType,
 	neuron_layer: NeuronLayer,
 	value: f32,
 }
 
+#[derive(Debug)]
 struct NeuronConnection {
 	source: NeuronDescription,
 	destination: NeuronDescription,
 	weight: f32,
+}
+
+// Small value used to keep into account inaccuracies
+const EPSILON: f32 = 0.01f32;
+
+#[test]
+fn should_compute_single_connection_input_internal() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([Gene::init(
+		NeuronLayer::Input,
+		0,
+		NeuronLayer::Internal,
+		0,
+		32767i16,
+	)]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert!(brain.internal[0].value > 1f32 - EPSILON);
 }

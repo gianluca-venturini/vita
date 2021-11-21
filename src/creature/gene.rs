@@ -28,7 +28,29 @@ impl Display for Gene {
 }
 
 impl Gene {
-	pub fn init(source: u8, destination: u8, weight: i16) -> Gene {
+	pub fn init(
+		source_layer: NeuronLayer,
+		source_number: u8,
+		destination_layer: NeuronLayer,
+		destination_number: u8,
+		weight: i16,
+	) -> Gene {
+		if source_layer == NeuronLayer::Output {
+			panic!("Output neuron can't be a connection source");
+		}
+		if destination_layer == NeuronLayer::Input {
+			panic!("input neuron can't be a connection destination");
+		}
+		let source = match source_layer {
+			NeuronLayer::Input => 0b00000000 | source_number,
+			NeuronLayer::Internal => 0b10000000 | source_number,
+			NeuronLayer::Output => 0,
+		};
+		let destination = match destination_layer {
+			NeuronLayer::Input => 0,
+			NeuronLayer::Internal => 0b00000000 | destination_number,
+			NeuronLayer::Output => 0b10000000 | destination_number,
+		};
 		return Gene {
 			source,
 			destination,
@@ -96,11 +118,12 @@ impl Gene {
 #[test]
 fn should_select_source_type() {
 	assert_eq!(
-		Gene::init(0, 0, 0).get_source_neuron_layer(),
+		Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 0).get_source_neuron_layer(),
 		NeuronLayer::Input
 	);
 	assert_eq!(
-		Gene::init(128, 0, 0).get_source_neuron_layer(),
+		Gene::init(NeuronLayer::Internal, 128, NeuronLayer::Internal, 0, 0)
+			.get_source_neuron_layer(),
 		NeuronLayer::Internal
 	);
 }
@@ -108,11 +131,13 @@ fn should_select_source_type() {
 #[test]
 fn should_select_destination_type() {
 	assert_eq!(
-		Gene::init(0, 0, 0).get_destination_neuron_layer(),
+		Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 0)
+			.get_destination_neuron_layer(),
 		NeuronLayer::Internal
 	);
 	assert_eq!(
-		Gene::init(0, 128, 0).get_destination_neuron_layer(),
+		Gene::init(NeuronLayer::Internal, 128, NeuronLayer::Output, 0, 0)
+			.get_destination_neuron_layer(),
 		NeuronLayer::Output
 	);
 }
@@ -125,42 +150,42 @@ fn should_select_source_neuron() {
 		num_internal: 5,
 	};
 	assert_eq!(
-		Gene::init(0, 0, 0).get_source_neuron(&brain),
+		Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 0).get_source_neuron(&brain),
 		NeuronDescription {
 			neuron_layer: NeuronLayer::Input,
 			neuron_number: 0
 		}
 	);
 	assert_eq!(
-		Gene::init(1, 0, 0).get_source_neuron(&brain),
+		Gene::init(NeuronLayer::Input, 1, NeuronLayer::Internal, 0, 0).get_source_neuron(&brain),
 		NeuronDescription {
 			neuron_layer: NeuronLayer::Input,
 			neuron_number: 1
 		}
 	);
 	assert_eq!(
-		Gene::init(5, 0, 0).get_source_neuron(&brain),
+		Gene::init(NeuronLayer::Input, 5, NeuronLayer::Internal, 0, 0).get_source_neuron(&brain),
 		NeuronDescription {
 			neuron_layer: NeuronLayer::Input,
 			neuron_number: 0
 		}
 	);
 	assert_eq!(
-		Gene::init(128, 0, 0).get_source_neuron(&brain),
+		Gene::init(NeuronLayer::Internal, 0, NeuronLayer::Internal, 0, 0).get_source_neuron(&brain),
 		NeuronDescription {
 			neuron_layer: NeuronLayer::Internal,
 			neuron_number: 0
 		}
 	);
 	assert_eq!(
-		Gene::init(128 + 1, 0, 0).get_source_neuron(&brain),
+		Gene::init(NeuronLayer::Internal, 1, NeuronLayer::Internal, 0, 0).get_source_neuron(&brain),
 		NeuronDescription {
 			neuron_layer: NeuronLayer::Internal,
 			neuron_number: 1
 		}
 	);
 	assert_eq!(
-		Gene::init(128 + 5, 0, 0).get_source_neuron(&brain),
+		Gene::init(NeuronLayer::Internal, 5, NeuronLayer::Internal, 0, 0).get_source_neuron(&brain),
 		NeuronDescription {
 			neuron_layer: NeuronLayer::Internal,
 			neuron_number: 0
@@ -170,17 +195,47 @@ fn should_select_source_neuron() {
 
 #[test]
 fn should_display_correctly() {
-	assert_eq!(format!("{}", Gene::init(0, 0, 0)), "00000000");
-	assert_eq!(format!("{}", Gene::init(255, 255, -1)), "FFFFFFFF");
-	assert_eq!(format!("{}", Gene::init(255, 0, -1)), "FF00FFFF");
-	assert_eq!(format!("{}", Gene::init(0, 255, -1)), "00FFFFFF");
-	assert_eq!(format!("{}", Gene::init(255, 255, 0)), "FFFF0000");
+	assert_eq!(
+		format!(
+			"{}",
+			Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 0)
+		),
+		"00000000"
+	);
+	assert_eq!(
+		format!(
+			"{}",
+			Gene::init(NeuronLayer::Internal, 127, NeuronLayer::Output, 127, -1)
+		),
+		"FFFFFFFF"
+	);
+	assert_eq!(
+		format!(
+			"{}",
+			Gene::init(NeuronLayer::Internal, 127, NeuronLayer::Internal, 0, -1)
+		),
+		"FF00FFFF"
+	);
+	assert_eq!(
+		format!(
+			"{}",
+			Gene::init(NeuronLayer::Input, 0, NeuronLayer::Output, 127, -1)
+		),
+		"00FFFFFF"
+	);
+	assert_eq!(
+		format!(
+			"{}",
+			Gene::init(NeuronLayer::Internal, 127, NeuronLayer::Output, 127, 0)
+		),
+		"FFFF0000"
+	);
 }
 
 #[test]
 fn should_mutate() {
 	fn init_and_mutate(bit: u8) -> Gene {
-		let mut gene = Gene::init(0, 0, 0);
+		let mut gene = Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 0);
 		gene.mutate(bit);
 		gene
 	}
