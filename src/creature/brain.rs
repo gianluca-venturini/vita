@@ -64,26 +64,26 @@ impl Brain {
 		let connections = self.get_connection_from_genes(genes);
 
 		// Compute all neurons with input layer source
-		self.compute_sum_on_destination_neurons(
+		self.compute_normalized_sum_on_destination_neurons(
 			&connections,
 			NeuronLayer::Input,
 			NeuronLayer::Internal,
 		);
-		self.compute_sum_on_destination_neurons(
+		self.compute_normalized_sum_on_destination_neurons(
 			&connections,
 			NeuronLayer::Input,
 			NeuronLayer::Output,
 		);
 
 		// Compute all internal neurons that are connected to intermediate neurons
-		self.compute_sum_on_destination_neurons(
+		self.compute_normalized_sum_on_destination_neurons(
 			&connections,
 			NeuronLayer::Internal,
 			NeuronLayer::Internal,
 		);
 
 		// Compute all neurons with intermediate layer source
-		self.compute_sum_on_destination_neurons(
+		self.compute_normalized_sum_on_destination_neurons(
 			&connections,
 			NeuronLayer::Internal,
 			NeuronLayer::Output,
@@ -105,7 +105,7 @@ impl Brain {
 		}
 	}
 
-	fn compute_sum_on_destination_neurons(
+	fn compute_normalized_sum_on_destination_neurons(
 		&mut self,
 		connections: &Vec<NeuronConnection>,
 		source_layer: NeuronLayer,
