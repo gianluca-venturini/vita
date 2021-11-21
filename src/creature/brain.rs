@@ -234,6 +234,13 @@ pub struct Neuron {
 	value: f32,
 }
 
+impl Neuron {
+	pub fn fire(&self) {
+		// This threshold is somewhat arbitrary. TODO: tweak
+		self.value > 0.5f32;
+	}
+}
+
 #[derive(Debug)]
 struct NeuronConnection {
 	source: NeuronDescription,
@@ -259,6 +266,7 @@ fn should_compute_single_connection_input_internal_positive_weight() {
 	brain.compute_neurons_state(&genes);
 	assert_eq!(brain.input[0].value, 1f32);
 	assert_gt!(brain.internal[0].value, 1f32 - EPSILON);
+	assert_eq!(brain.internal[1].value, 0f32);
 }
 #[test]
 fn should_compute_single_connection_input_internal_positive_small_weight() {

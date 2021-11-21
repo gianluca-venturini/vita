@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate more_asserts;
+extern crate rand;
 
 mod creature;
 

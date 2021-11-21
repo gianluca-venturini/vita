@@ -1,4 +1,5 @@
 use super::brain::{BrainDescription, NeuronDescription, NeuronLayer};
+use rand::prelude::*;
 use std::fmt::{self, Debug, Display, Formatter};
 
 pub struct Gene {
@@ -56,6 +57,15 @@ impl Gene {
 			destination,
 			weight,
 		};
+	}
+
+	pub fn init_random() -> Gene {
+		let mut rng = rand::thread_rng();
+		Gene {
+			source: rng.gen(),
+			destination: rng.gen(),
+			weight: rng.gen(),
+		}
 	}
 
 	pub fn get_source_neuron_layer(&self) -> NeuronLayer {
