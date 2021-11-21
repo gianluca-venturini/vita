@@ -1,4 +1,5 @@
 use super::gene::Gene;
+use std::collections::HashMap;
 
 pub struct BrainDescription {
 	pub num_input: u8,
@@ -56,30 +57,92 @@ impl Brain {
 
 	pub fn compute_neurons_state(&mut self, genes: &Vec<Gene>) {
 		// Reset all neurons
-		for neuron in self.input.iter_mut() {
-			// IDEA: maybe these neuron layer should be set outside and we can avoid touching it here
-			neuron.value = 0f32;
-		}
-		for neuron in self.internal.iter_mut() {
-			neuron.value = 0f32;
-		}
-		for neuron in self.output.iter_mut() {
-			neuron.value = 0f32;
-		}
+		// IDEA: maybe these neuron layer should be set outside and we can avoid touching it here
+		self.reset_neurons_layer(NeuronLayer::Input);
+		self.reset_neurons_layer(NeuronLayer::Internal);
+		self.reset_neurons_layer(NeuronLayer::Output);
 		let connections = self.get_connection_from_genes(genes);
+
 		// Compute all neurons with input layer source
+		self.compute_sum_on_destination_neurons(
+			&connections,
+			NeuronLayer::Input,
+			NeuronLayer::Internal,
+		);
+		self.compute_sum_on_destination_neurons(
+			&connections,
+			NeuronLayer::Input,
+			NeuronLayer::Output,
+		);
+
+		// Compute all internal neurons that are connected to intermediate neurons
+		self.compute_sum_on_destination_neurons(
+			&connections,
+			NeuronLayer::Internal,
+			NeuronLayer::Internal,
+		);
+
+		// Compute all neurons with intermediate layer source
+		self.compute_sum_on_destination_neurons(
+			&connections,
+			NeuronLayer::Internal,
+			NeuronLayer::Output,
+		);
+	}
+
+	fn reset_neurons_layer(&mut self, layer: NeuronLayer) {
+		let neurons = self.get_neurons_layer(layer);
+		for neuron in neurons.iter_mut() {
+			neuron.value = 0f32;
+		}
+	}
+
+	fn get_neurons_layer(&mut self, layer: NeuronLayer) -> &mut Vec<Neuron> {
+		match layer {
+			NeuronLayer::Input => &mut self.input,
+			NeuronLayer::Internal => &mut self.internal,
+			NeuronLayer::Output => &mut self.output,
+		}
+	}
+
+	fn compute_sum_on_destination_neurons(
+		&mut self,
+		connections: &Vec<NeuronConnection>,
+		source_layer: NeuronLayer,
+		destination_layer: NeuronLayer,
+	) {
+		// Accumulate all the changes in a separate area to ensure
+		// that the result of computations at this step are not counted
+		// as input for the following elements
+		let mut changes: HashMap<u8, f32> = HashMap::new();
 		for connection in connections.iter() {
-			if connection.source.neuron_layer == NeuronLayer::Input {
-				let mut sum = 0f32;
+			if connection.source.neuron_layer == source_layer
+				&& connection.destination.neuron_layer == destination_layer
+			{
+				let mut weightedValue = 0f32;
 				{
 					let source = self.desc_to_neuron(&connection.source);
-					sum += source.value * connection.weight;
+					weightedValue = source.value * connection.weight;
 				}
 				let destination = self.desc_to_neuron(&connection.destination);
-				destination.value = sum;
+				changes.insert(
+					// accumulate the value
+					connection.destination.neuron_number,
+					match changes.get(&connection.destination.neuron_number) {
+						Some(x) => *x,
+						None => 0f32,
+					} + weightedValue,
+				);
 			}
 		}
-		// TODO: compute all neurons with input layer intermediate
+		// Now is safe to apply the changes
+		for (neuron_number, valueChange) in changes.iter_mut() {
+			let neuron = self.desc_to_neuron(&NeuronDescription {
+				neuron_number: *neuron_number,
+				neuron_layer: destination_layer,
+			});
+			neuron.value = (neuron.value.atanh() + *valueChange).tanh();
+		}
 	}
 
 	fn desc_to_neuron(&mut self, desc: &NeuronDescription) -> &mut Neuron {
@@ -126,7 +189,7 @@ pub enum NeuronLayer {
 	Output,
 }
 
-#[derive(Clone)]
+#[derive(Clone, std::hash::Hash)]
 pub enum NeuronType {
 	// Input
 	Random,
