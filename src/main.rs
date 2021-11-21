@@ -3,6 +3,7 @@ extern crate more_asserts;
 extern crate rand;
 
 mod creature;
+mod world;
 
 fn main() {
     println!("Hello, world!");

@@ -1,4 +1,5 @@
 use super::gene::Gene;
+use super::world;
 use std::collections::HashMap;
 
 pub struct BrainDescription {
@@ -87,6 +88,17 @@ impl Brain {
 			NeuronLayer::Internal,
 			NeuronLayer::Output,
 		);
+	}
+
+	pub fn set_inputs(
+		&mut self,
+		world: &world::World,
+		position: &world::Position,
+		direction: &world::Direction,
+	) {
+		for neuron in self.input.iter_mut() {
+			neuron.set_from_world(world, position, direction)
+		}
 	}
 
 	fn reset_neurons_layer(&mut self, layer: NeuronLayer) {
@@ -187,7 +199,7 @@ pub enum NeuronLayer {
 	Output,
 }
 
-#[derive(Clone, std::hash::Hash, Debug)]
+#[derive(Clone, Copy, std::hash::Hash, Debug)]
 pub enum NeuronType {
 	// Input
 	Random,
@@ -238,6 +250,27 @@ impl Neuron {
 	pub fn fire(&self) {
 		// This threshold is somewhat arbitrary. TODO: tweak
 		self.value > 0.5f32;
+	}
+
+	pub fn set_from_world(
+		&mut self,
+		world: &world::World,
+		position: &world::Position,
+		direction: &world::Direction,
+	) {
+		match self.neuron_type {
+			Random => {}
+			BlockLeftRight => {}
+			BlockForward => {}
+			LastMovementY => {}
+			LastMovementX => {}
+
+			Internal => {}
+			BorderDistanceNorthSouth => {}
+			BorderDistanceEastWest => {}
+			WordLocationNorthSouth => {}
+			WordLocationEastWest => {}
+		};
 	}
 }
 
@@ -364,4 +397,18 @@ fn should_compute_internal_connected_another_internal() {
 	assert_eq!(brain.input[0].value, 1f32);
 	assert_gt!(brain.internal[0].value, 1f32 - EPSILON);
 	assert_gt!(brain.internal[1].value, 1f32 - EPSILON);
+}
+
+#[test]
+fn should_set_input_neurons() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BlockForward,
+		neuron_layer: NeuronLayer::Internal,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 1, y: 1 };
+	let direction = world::Direction::North;
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
 }
