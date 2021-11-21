@@ -163,3 +163,27 @@ fn should_select_source_neuron() {
 		}
 	);
 }
+
+#[test]
+fn should_display_correctly() {
+	assert_eq!(format!("{}", Gene::init(0, 0, 0)), "00000000");
+	assert_eq!(format!("{}", Gene::init(255, 255, -1)), "FFFFFFFF");
+	assert_eq!(format!("{}", Gene::init(255, 0, -1)), "FF00FFFF");
+	assert_eq!(format!("{}", Gene::init(0, 255, -1)), "00FFFFFF");
+	assert_eq!(format!("{}", Gene::init(255, 255, 0)), "FFFF0000");
+}
+
+#[test]
+fn should_mutate() {
+	fn init_and_mutate(bit: u8) -> Gene {
+		let mut gene = Gene::init(0, 0, 0);
+		gene.mutate(bit);
+		gene
+	}
+	assert_eq!(format!("{}", init_and_mutate(0)), "00000001");
+	assert_eq!(format!("{}", init_and_mutate(1)), "00000002");
+	assert_eq!(format!("{}", init_and_mutate(2)), "00000004");
+	assert_eq!(format!("{}", init_and_mutate(3)), "00000008");
+	assert_eq!(format!("{}", init_and_mutate(4)), "00000010");
+	assert_eq!(format!("{}", init_and_mutate(31)), "80000000");
+}
