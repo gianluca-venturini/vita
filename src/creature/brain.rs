@@ -31,6 +31,7 @@ impl Brain {
 				.map(|neuron_type| Neuron {
 					neuron_type,
 					value: 0f32,
+					neuron_layer: NeuronLayer::Input,
 				})
 				.collect(),
 			output: OUTPUT_NEURONS
@@ -39,41 +40,65 @@ impl Brain {
 				.map(|neuron_type| Neuron {
 					neuron_type,
 					value: 0f32,
+					neuron_layer: NeuronLayer::Output,
 				})
 				.collect(),
 			internal: vec![
 				Neuron {
 					neuron_type: NeuronType::Internal,
-					value: 0f32
+					value: 0f32,
+					neuron_layer: NeuronLayer::Internal,
 				};
 				description.num_internal as usize
 			],
 		}
 	}
 
-	pub fn compute_neurons_state(&self, genes: &Vec<Gene>) {
-		// TODO: reset all neurons
-		let connection = self.get_connection_from_genes(genes);
-		// TODO: compute all neurons with input layer source
+	pub fn compute_neurons_state(&mut self, genes: &Vec<Gene>) {
+		// Reset all neurons
+		for neuron in self.input.iter_mut() {
+			// IDEA: maybe these neuron layer should be set outside and we can avoid touching it here
+			neuron.value = 0f32;
+		}
+		for neuron in self.internal.iter_mut() {
+			neuron.value = 0f32;
+		}
+		for neuron in self.output.iter_mut() {
+			neuron.value = 0f32;
+		}
+		let connections = self.get_connection_from_genes(genes);
+		// Compute all neurons with input layer source
+		for connection in connections.iter() {
+			if connection.source.neuron_layer == NeuronLayer::Input {
+				let mut sum = 0f32;
+				{
+					let source = self.desc_to_neuron(&connection.source);
+					sum += source.value * connection.weight;
+				}
+				let destination = self.desc_to_neuron(&connection.destination);
+				destination.value = sum;
+			}
+		}
 		// TODO: compute all neurons with input layer intermediate
 	}
 
-	fn get_connection_from_genes<'a>(&'a self, genes: &Vec<Gene>) -> Vec<NeuronConnection<'a>> {
-		let mut connections: Vec<NeuronConnection<'a>> = Vec::new();
+	fn desc_to_neuron(&mut self, desc: &NeuronDescription) -> &mut Neuron {
+		match desc.neuron_layer {
+			NeuronLayer::Input => &mut self.input[desc.neuron_number as usize],
+			NeuronLayer::Internal => &mut self.internal[desc.neuron_number as usize],
+			NeuronLayer::Output => &mut self.output[desc.neuron_number as usize],
+		}
+	}
 
-		let desc_to_neuron = |desc: NeuronDescription| -> &'a Neuron {
-			match desc.neuron_layer {
-				NeuronLayer::Input => &self.input[desc.neuron_number as usize],
-				NeuronLayer::Internal => &self.internal[desc.neuron_number as usize],
-				NeuronLayer::Output => &self.output[desc.neuron_number as usize],
-			}
-		};
+	fn get_connection_from_genes(&self, genes: &Vec<Gene>) -> Vec<NeuronConnection> {
+		let mut connections: Vec<NeuronConnection> = Vec::new();
 
 		for gene in genes {
-			let source_desc = gene.get_source_neuron(&self.to_brain_description());
-			let destination_desc = gene.get_destination_neuron(&self.to_brain_description());
-			let source = desc_to_neuron(source_desc);
-			let destination = desc_to_neuron(destination_desc);
+			let source = gene.get_source_neuron(&self.to_brain_description());
+			let destination = gene.get_destination_neuron(&self.to_brain_description());
+			// weight is scaled for having smaller numbers
+			// and being able to follow the calculations by hand
+			// if something goes wrong
 			let weight = f32::from(gene.weight) / 8192f32;
 			connections.push(NeuronConnection {
 				source,
@@ -94,7 +119,7 @@ impl Brain {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum NeuronLayer {
 	Input,
 	Internal,
@@ -144,11 +169,12 @@ pub struct NeuronDescription {
 #[derive(Clone)]
 pub struct Neuron {
 	neuron_type: NeuronType,
+	neuron_layer: NeuronLayer,
 	value: f32,
 }
 
-struct NeuronConnection<'a> {
-	source: &'a Neuron,
-	destination: &'a Neuron,
+struct NeuronConnection {
+	source: NeuronDescription,
+	destination: NeuronDescription,
 	weight: f32,
 }
