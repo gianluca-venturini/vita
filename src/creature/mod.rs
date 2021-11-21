@@ -3,6 +3,7 @@ pub mod gene;
 
 use super::world;
 
+#[derive(std::fmt::Debug)]
 pub struct Creature {
 	brain: brain::Brain,
 	genes: Vec<gene::Gene>,

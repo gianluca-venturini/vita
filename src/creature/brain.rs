@@ -1,5 +1,6 @@
 use super::gene::Gene;
 use super::world;
+use super::Creature;
 use std::collections::HashMap;
 
 pub struct BrainDescription {
@@ -259,17 +260,26 @@ impl Neuron {
 		direction: &world::Direction,
 	) {
 		match self.neuron_type {
-			Random => {}
-			BlockLeftRight => {}
-			BlockForward => {}
-			LastMovementY => {}
-			LastMovementX => {}
+			NeuronType::Random => {}
+			NeuronType::BlockLeftRight => {}
+			NeuronType::BlockForward => {
+				if world
+					.coordinates
+					.contains_key(&position.move_direction(direction, 1))
+				{
+					self.value = 1f32;
+				} else {
+					self.value = 0f32;
+				}
+			}
+			NeuronType::LastMovementY => {}
+			NeuronType::LastMovementX => {}
 
-			Internal => {}
-			BorderDistanceNorthSouth => {}
-			BorderDistanceEastWest => {}
-			WordLocationNorthSouth => {}
-			WordLocationEastWest => {}
+			NeuronType::Internal => {}
+			NeuronType::BorderDistanceNorthSouth => {}
+			NeuronType::BorderDistanceEastWest => {}
+			NeuronType::WordLocationNorthSouth => {}
+			NeuronType::WordLocationEastWest => {}
 		};
 	}
 }
@@ -400,15 +410,40 @@ fn should_compute_internal_connected_another_internal() {
 }
 
 #[test]
-fn should_set_input_neurons() {
+fn should_set_block_forward_true() {
 	let mut neuron = Neuron {
 		neuron_type: NeuronType::BlockForward,
 		neuron_layer: NeuronLayer::Internal,
 		value: 0f32,
 	};
-	let world = world::World::init();
+	let mut world = world::World::init();
 	let position = world::Position { x: 1, y: 1 };
 	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	// one creature blocking the path forward
+	world
+		.coordinates
+		.insert(world::Position { x: 1, y: 2 }, Creature::init_random(0, 0));
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_block_forward_false() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BlockForward,
+		neuron_layer: NeuronLayer::Internal,
+		value: 0f32,
+	};
+	let mut world = world::World::init();
+	let position = world::Position { x: 1, y: 1 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	// nothing blocking the path forward
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 0f32);
 }
