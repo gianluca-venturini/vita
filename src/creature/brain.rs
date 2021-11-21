@@ -62,9 +62,6 @@ impl Brain {
 		self.reset_neurons_layer(NeuronLayer::Output);
 		let connections = self.get_connection_from_genes(genes);
 
-		println!("{:?}", connections);
-		println!("{:?}", self);
-
 		// Compute all neurons with input layer source
 		self.compute_normalized_sum_on_destination_neurons(
 			&connections,
@@ -76,8 +73,6 @@ impl Brain {
 			NeuronLayer::Input,
 			NeuronLayer::Output,
 		);
-
-		println!("{:?}", self);
 
 		// Compute all internal neurons that are connected to intermediate neurons
 		self.compute_normalized_sum_on_destination_neurons(
@@ -126,7 +121,6 @@ impl Brain {
 				let weighted_value: f32;
 				{
 					let source = self.desc_to_neuron(&connection.source);
-					println!("source: {:?}, value: {}", connection.source, source.value);
 					weighted_value = source.value * connection.weight;
 				}
 				changes.insert(
@@ -141,10 +135,6 @@ impl Brain {
 		}
 		// Now is safe to apply the changes
 		for (neuron_number, value_change) in changes.iter_mut() {
-			println!(
-				"neuron_number: {}, value_change: {}",
-				neuron_number, value_change
-			);
 			let neuron = self.desc_to_neuron(&NeuronDescription {
 				neuron_number: *neuron_number,
 				neuron_layer: destination_layer,
@@ -255,7 +245,7 @@ struct NeuronConnection {
 const EPSILON: f32 = 0.01f32;
 
 #[test]
-fn should_compute_single_connection_input_internal() {
+fn should_compute_single_connection_input_internal_positive_weight() {
 	let mut brain = Brain::init(2);
 	let genes = Vec::from([Gene::init(
 		NeuronLayer::Input,
@@ -268,5 +258,102 @@ fn should_compute_single_connection_input_internal() {
 	brain.input[0].value = 1f32;
 	brain.compute_neurons_state(&genes);
 	assert_eq!(brain.input[0].value, 1f32);
-	assert!(brain.internal[0].value > 1f32 - EPSILON);
+	assert_gt!(brain.internal[0].value, 1f32 - EPSILON);
+}
+#[test]
+fn should_compute_single_connection_input_internal_positive_small_weight() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([Gene::init(
+		NeuronLayer::Input,
+		0,
+		NeuronLayer::Internal,
+		0,
+		1i16,
+	)]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert_gt!(brain.internal[0].value, 0f32);
+}
+
+#[test]
+fn should_compute_single_connection_input_internal_negative_weight() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([Gene::init(
+		NeuronLayer::Input,
+		0,
+		NeuronLayer::Internal,
+		0,
+		-32766i16,
+	)]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert_lt!(brain.internal[0].value, -1f32 + EPSILON);
+}
+
+#[test]
+fn should_compute_single_connection_input_output() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([Gene::init(
+		NeuronLayer::Input,
+		0,
+		NeuronLayer::Output,
+		0,
+		32767i16,
+	)]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert_gt!(brain.output[0].value, 1f32 - EPSILON);
+}
+
+#[test]
+fn should_compute_two_connections_internal_intermediate_output() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([
+		Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 32767i16),
+		Gene::init(NeuronLayer::Internal, 0, NeuronLayer::Output, 0, 32767i16),
+	]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert_gt!(brain.internal[0].value, 1f32 - EPSILON);
+	assert_gt!(brain.output[0].value, 1f32 - EPSILON);
+}
+
+#[test]
+fn should_compute_internal_connected_two_output() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([
+		Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 32767i16),
+		Gene::init(NeuronLayer::Internal, 0, NeuronLayer::Output, 0, 32767i16),
+		Gene::init(NeuronLayer::Internal, 0, NeuronLayer::Output, 1, 32767i16),
+	]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert_gt!(brain.internal[0].value, 1f32 - EPSILON);
+	assert_gt!(brain.output[0].value, 1f32 - EPSILON);
+	assert_gt!(brain.output[1].value, 1f32 - EPSILON);
+}
+
+#[test]
+fn should_compute_internal_connected_another_internal() {
+	let mut brain = Brain::init(2);
+	let genes = Vec::from([
+		Gene::init(NeuronLayer::Input, 0, NeuronLayer::Internal, 0, 32767i16),
+		Gene::init(NeuronLayer::Internal, 0, NeuronLayer::Internal, 1, 32767i16),
+	]);
+	assert_eq!(brain.output[0].value, 0f32);
+	brain.input[0].value = 1f32;
+	brain.compute_neurons_state(&genes);
+	assert_eq!(brain.input[0].value, 1f32);
+	assert_gt!(brain.internal[0].value, 1f32 - EPSILON);
+	assert_gt!(brain.internal[1].value, 1f32 - EPSILON);
 }
