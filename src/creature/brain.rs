@@ -261,7 +261,19 @@ impl Neuron {
 	) {
 		match self.neuron_type {
 			NeuronType::Random => {}
-			NeuronType::BlockLeftRight => {}
+			NeuronType::BlockLeftRight => {
+				if world
+					.coordinates
+					.contains_key(&position.move_direction(&direction.rotate_right(), 1))
+					|| world
+						.coordinates
+						.contains_key(&position.move_direction(&direction.rotate_left(), 1))
+				{
+					self.value = 1f32;
+				} else {
+					self.value = 0f32;
+				}
+			}
 			NeuronType::BlockForward => {
 				if world
 					.coordinates
@@ -413,7 +425,7 @@ fn should_compute_internal_connected_another_internal() {
 fn should_set_block_forward_true() {
 	let mut neuron = Neuron {
 		neuron_type: NeuronType::BlockForward,
-		neuron_layer: NeuronLayer::Internal,
+		neuron_layer: NeuronLayer::Input,
 		value: 0f32,
 	};
 	let mut world = world::World::init();
@@ -434,7 +446,25 @@ fn should_set_block_forward_true() {
 fn should_set_block_forward_false() {
 	let mut neuron = Neuron {
 		neuron_type: NeuronType::BlockForward,
-		neuron_layer: NeuronLayer::Internal,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 1, y: 1 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	// nothing blocking the path forward
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 0f32);
+}
+
+#[test]
+fn should_set_block_right_true() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BlockLeftRight,
+		neuron_layer: NeuronLayer::Input,
 		value: 0f32,
 	};
 	let mut world = world::World::init();
@@ -443,7 +473,49 @@ fn should_set_block_forward_false() {
 
 	assert_eq!(neuron.value, 0f32);
 
-	// nothing blocking the path forward
+	// one creature blocking the path left
+	world
+		.coordinates
+		.insert(world::Position { x: 2, y: 1 }, Creature::init_random(0, 0));
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_block_left_true() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BlockLeftRight,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let mut world = world::World::init();
+	let position = world::Position { x: 1, y: 1 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	// one creature blocking the path left
+	world
+		.coordinates
+		.insert(world::Position { x: 0, y: 1 }, Creature::init_random(0, 0));
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_block_lateral_false() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BlockLeftRight,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 1, y: 1 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	// nothing blocking the path laterally
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 0f32);
 }

@@ -54,6 +54,21 @@ pub enum Direction {
 	West,
 }
 
+impl Direction {
+	pub fn rotate_left(&self) -> Direction {
+		match self {
+			Direction::North => Direction::West,
+			Direction::East => Direction::North,
+			Direction::South => Direction::East,
+			Direction::West => Direction::South,
+		}
+	}
+
+	pub fn rotate_right(&self) -> Direction {
+		self.rotate_left().rotate_left().rotate_left()
+	}
+}
+
 #[test]
 fn should_move_correctly() {
 	assert_eq!(
