@@ -1,4 +1,4 @@
-use super::brain::{Brain, Neuron, NeuronType};
+use super::brain::{BrainDescription, NeuronDescription, NeuronLayer};
 use std::fmt::{self, Debug, Display, Formatter};
 
 pub struct Gene {
@@ -36,31 +36,31 @@ impl Gene {
 		};
 	}
 
-	pub fn get_source_neuron_type(&self) -> NeuronType {
+	pub fn get_source_neuron_layer(&self) -> NeuronLayer {
 		if self.source & 0b10000000 == 0 {
-			return NeuronType::Input;
+			return NeuronLayer::Input;
 		} else {
-			return NeuronType::Internal;
+			return NeuronLayer::Internal;
 		}
 	}
 
-	pub fn get_destination_neuron_type(&self) -> NeuronType {
+	pub fn get_destination_neuron_layer(&self) -> NeuronLayer {
 		println!("{}", self.destination & 0b10000000);
 		if self.destination & 0b10000000 == 0 {
-			return NeuronType::Internal;
+			return NeuronLayer::Internal;
 		} else {
-			return NeuronType::Output;
+			return NeuronLayer::Output;
 		}
 	}
 
-	pub fn get_source_neuron(&self, brain: &Brain) -> Neuron {
-		let neuron_type = self.get_source_neuron_type();
-		Gene::get_neuron(neuron_type, self.source, brain)
+	pub fn get_source_neuron(&self, brain: &BrainDescription) -> NeuronDescription {
+		let neuron_layer = self.get_source_neuron_layer();
+		Gene::get_neuron(neuron_layer, self.source, brain)
 	}
 
-	pub fn get_destination_neuron(&self, brain: &Brain) -> Neuron {
-		let neuron_type = self.get_destination_neuron_type();
-		Gene::get_neuron(neuron_type, self.destination, brain)
+	pub fn get_destination_neuron(&self, brain: &BrainDescription) -> NeuronDescription {
+		let neuron_layer = self.get_destination_neuron_layer();
+		Gene::get_neuron(neuron_layer, self.destination, brain)
 	}
 
 	pub fn mutate(&mut self, bit: u8) {
@@ -76,14 +76,18 @@ impl Gene {
 		self.weight = new_raw_gene as i16;
 	}
 
-	fn get_neuron(neuron_type: NeuronType, raw_number: u8, brain: &Brain) -> Neuron {
-		let neuron_number = match neuron_type {
-			NeuronType::Input => (raw_number & 0b01111111) % brain.num_input,
-			NeuronType::Internal => (raw_number & 0b01111111) % brain.num_input,
-			NeuronType::Output => (raw_number & 0b01111111) % brain.num_output,
+	fn get_neuron(
+		neuron_layer: NeuronLayer,
+		raw_number: u8,
+		brain: &BrainDescription,
+	) -> NeuronDescription {
+		let neuron_number = match neuron_layer {
+			NeuronLayer::Input => (raw_number & 0b01111111) % brain.num_input,
+			NeuronLayer::Internal => (raw_number & 0b01111111) % brain.num_input,
+			NeuronLayer::Output => (raw_number & 0b01111111) % brain.num_output,
 		};
-		Neuron {
-			neuron_type,
+		NeuronDescription {
+			neuron_layer,
 			neuron_number,
 		}
 	}
@@ -92,73 +96,73 @@ impl Gene {
 #[test]
 fn should_select_source_type() {
 	assert_eq!(
-		Gene::init(0, 0, 0).get_source_neuron_type(),
-		NeuronType::Input
+		Gene::init(0, 0, 0).get_source_neuron_layer(),
+		NeuronLayer::Input
 	);
 	assert_eq!(
-		Gene::init(128, 0, 0).get_source_neuron_type(),
-		NeuronType::Internal
+		Gene::init(128, 0, 0).get_source_neuron_layer(),
+		NeuronLayer::Internal
 	);
 }
 
 #[test]
 fn should_select_destination_type() {
 	assert_eq!(
-		Gene::init(0, 0, 0).get_destination_neuron_type(),
-		NeuronType::Internal
+		Gene::init(0, 0, 0).get_destination_neuron_layer(),
+		NeuronLayer::Internal
 	);
 	assert_eq!(
-		Gene::init(0, 128, 0).get_destination_neuron_type(),
-		NeuronType::Output
+		Gene::init(0, 128, 0).get_destination_neuron_layer(),
+		NeuronLayer::Output
 	);
 }
 
 #[test]
 fn should_select_source_neuron() {
-	let brain = Brain {
+	let brain = BrainDescription {
 		num_input: 5,
 		num_output: 5,
 		num_internal: 5,
 	};
 	assert_eq!(
 		Gene::init(0, 0, 0).get_source_neuron(&brain),
-		Neuron {
-			neuron_type: NeuronType::Input,
+		NeuronDescription {
+			neuron_layer: NeuronLayer::Input,
 			neuron_number: 0
 		}
 	);
 	assert_eq!(
 		Gene::init(1, 0, 0).get_source_neuron(&brain),
-		Neuron {
-			neuron_type: NeuronType::Input,
+		NeuronDescription {
+			neuron_layer: NeuronLayer::Input,
 			neuron_number: 1
 		}
 	);
 	assert_eq!(
 		Gene::init(5, 0, 0).get_source_neuron(&brain),
-		Neuron {
-			neuron_type: NeuronType::Input,
+		NeuronDescription {
+			neuron_layer: NeuronLayer::Input,
 			neuron_number: 0
 		}
 	);
 	assert_eq!(
 		Gene::init(128, 0, 0).get_source_neuron(&brain),
-		Neuron {
-			neuron_type: NeuronType::Internal,
+		NeuronDescription {
+			neuron_layer: NeuronLayer::Internal,
 			neuron_number: 0
 		}
 	);
 	assert_eq!(
 		Gene::init(128 + 1, 0, 0).get_source_neuron(&brain),
-		Neuron {
-			neuron_type: NeuronType::Internal,
+		NeuronDescription {
+			neuron_layer: NeuronLayer::Internal,
 			neuron_number: 1
 		}
 	);
 	assert_eq!(
 		Gene::init(128 + 5, 0, 0).get_source_neuron(&brain),
-		Neuron {
-			neuron_type: NeuronType::Internal,
+		NeuronDescription {
+			neuron_layer: NeuronLayer::Internal,
 			neuron_number: 0
 		}
 	);
