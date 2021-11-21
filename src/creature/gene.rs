@@ -1,5 +1,5 @@
 use super::brain::{Brain, Neuron, NeuronType};
-use std::fmt::{self, Debug, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 
 pub struct Gene {
 	// source neuron
@@ -12,6 +12,18 @@ pub struct Gene {
 impl Debug for Gene {
 	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
 		write!(f, "{} {} {}", self.source, self.destination, self.weight)
+	}
+}
+
+impl Display for Gene {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		write!(
+			f,
+			"{}{}{}",
+			&format!("{:#04X}", self.source)[2..],
+			&format!("{:#04X}", self.destination)[2..],
+			&format!("{:#06X}", self.weight as u16)[2..],
+		)
 	}
 }
 
@@ -49,6 +61,19 @@ impl Gene {
 	pub fn get_destination_neuron(&self, brain: &Brain) -> Neuron {
 		let neuron_type = self.get_destination_neuron_type();
 		Gene::get_neuron(neuron_type, self.destination, brain)
+	}
+
+	pub fn mutate(&mut self, bit: u8) {
+		if bit >= 32 {
+			panic!()
+		}
+		let raw_gene = u32::from(self.source) << (16 + 8)
+			| u32::from(self.destination) << 16
+			| (self.weight as u32);
+		let new_raw_gene = raw_gene ^ (0b1 << bit);
+		self.source = (new_raw_gene >> (16 + 8)) as u8;
+		self.destination = (new_raw_gene >> (16)) as u8;
+		self.weight = new_raw_gene as i16;
 	}
 
 	fn get_neuron(neuron_type: NeuronType, raw_number: u8, brain: &Brain) -> Neuron {
