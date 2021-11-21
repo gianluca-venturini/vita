@@ -1,3 +1,4 @@
+use super::brain::{Brain, Neuron, NeuronType};
 use std::fmt::{self, Debug, Formatter};
 
 pub struct Gene {
@@ -6,25 +7,6 @@ pub struct Gene {
 	// destination neuron
 	destination: u8,
 	pub weight: i16,
-}
-
-pub struct Brain {
-	pub num_input: u8,
-	pub num_internal: u8,
-	pub num_output: u8,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum NeuronType {
-	Input,
-	Internal,
-	Output,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Neuron {
-	neuron_type: NeuronType,
-	neuron_number: u8,
 }
 
 impl Debug for Gene {

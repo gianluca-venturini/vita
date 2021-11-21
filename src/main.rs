@@ -1,6 +1,6 @@
-mod gene;
+mod creature;
 
 fn main() {
     println!("Hello, world!");
-    println!("{:?}", gene::Gene::init(4, 5, 0));
+    println!("{:?}", creature::gene::Gene::init(4, 5, 0));
 }
