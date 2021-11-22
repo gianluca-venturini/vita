@@ -2,6 +2,21 @@ use super::creature;
 use std::collections::HashMap;
 
 // The world coordinate system has (0, 0) on bottom left
+//
+//  ^ Y
+//  |
+//  |
+//  |
+//  |
+//  |
+//  |
+//  |
+//  |
+//  |
+//  |
+//  |
+// -|-------------------------------------------> X
+// (0,0)
 
 pub struct World {
 	pub coordinates: HashMap<Position, creature::Creature>,
@@ -82,6 +97,35 @@ impl Position {
 	}
 }
 
+#[derive(Debug, PartialEq)]
+pub struct DeltaPosition {
+	pub x: f32,
+	pub y: f32,
+}
+
+impl DeltaPosition {
+	pub fn move_direction(&self, direction: &Direction, step: f32) -> DeltaPosition {
+		match direction {
+			Direction::North => DeltaPosition {
+				x: self.x,
+				y: self.y + step,
+			},
+			Direction::South => DeltaPosition {
+				x: self.x,
+				y: self.y - step,
+			},
+			Direction::East => DeltaPosition {
+				x: self.x + step,
+				y: self.y,
+			},
+			Direction::West => DeltaPosition {
+				x: self.x - step,
+				y: self.y,
+			},
+		}
+	}
+}
+
 #[derive(Debug)]
 pub enum Direction {
 	North,
@@ -154,5 +198,25 @@ fn should_move_only_inside_boundary() {
 	assert_eq!(
 		Position { x: 0, y: 0 }.move_direction(&Direction::West, 1, &boundary),
 		None
+	);
+}
+
+#[test]
+fn should_delta_move_correctly() {
+	assert_eq!(
+		DeltaPosition { x: 0f32, y: 0f32 }.move_direction(&Direction::North, 1f32),
+		DeltaPosition { x: 0f32, y: 1f32 }
+	);
+	assert_eq!(
+		DeltaPosition { x: 0f32, y: 0f32 }.move_direction(&Direction::South, 1f32),
+		DeltaPosition { x: 0f32, y: -1f32 }
+	);
+	assert_eq!(
+		DeltaPosition { x: 0f32, y: 0f32 }.move_direction(&Direction::East, 1f32),
+		DeltaPosition { x: 1f32, y: 0f32 }
+	);
+	assert_eq!(
+		DeltaPosition { x: 0f32, y: 0f32 }.move_direction(&Direction::West, 1f32),
+		DeltaPosition { x: -1f32, y: 0f32 }
 	);
 }

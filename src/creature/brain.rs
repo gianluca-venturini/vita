@@ -2,6 +2,7 @@ use super::gene::Gene;
 use super::world;
 use super::Creature;
 use rand::prelude::*;
+use std::cmp;
 use std::collections::HashMap;
 
 pub struct BrainDescription {
@@ -101,6 +102,16 @@ impl Brain {
 		for neuron in self.input.iter_mut() {
 			neuron.set_from_world(world, position, direction)
 		}
+	}
+
+	pub fn desired_move(&self, direction: &world::Direction) -> world::DeltaPosition {
+		let mut delta = world::DeltaPosition { x: 0f32, y: 0f32 };
+		for neuron in self.input.iter() {
+			let delta_neuron = neuron.desired_move(direction);
+			delta.x += delta_neuron.x;
+			delta.y += delta_neuron.y;
+		}
+		delta
 	}
 
 	fn reset_neurons_layer(&mut self, layer: NeuronLayer) {
@@ -315,6 +326,45 @@ impl Neuron {
 			NeuronType::MoveNorthSouth => {}
 		};
 	}
+
+	pub fn desired_move(&self, direction: &world::Direction) -> world::DeltaPosition {
+		match self.neuron_type {
+			NeuronType::Random => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::BlockLeftRight => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::BlockForward => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::LastMovementY => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::LastMovementX => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::BorderDistanceNorthSouth => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::BorderDistanceEastWest => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::WordLocationNorthSouth => world::DeltaPosition { x: 0f32, y: 0f32 },
+			NeuronType::WordLocationEastWest => world::DeltaPosition { x: 0f32, y: 0f32 },
+
+			NeuronType::Internal => world::DeltaPosition { x: 0f32, y: 0f32 },
+
+			// TODO: Implement output neurons
+			NeuronType::MoveForward => world::DeltaPosition { x: 0f32, y: 0f32 }
+				.move_direction(direction, self.value.max(0f32)),
+			NeuronType::MoveRandom => {
+				let mut rng = rand::thread_rng();
+				world::DeltaPosition {
+					x: rng.gen(),
+					y: rng.gen(),
+				}
+			}
+			NeuronType::MoveReverse => world::DeltaPosition { x: 0f32, y: 0f32 }
+				.move_direction(&direction.rotate_left().rotate_left(), self.value.max(0f32)),
+			NeuronType::MoveLeftRight => world::DeltaPosition { x: 0f32, y: 0f32 }
+				.move_direction(&direction.rotate_right(), self.value),
+			NeuronType::MoveEastWest => world::DeltaPosition {
+				x: self.value,
+				y: 0f32,
+			},
+			NeuronType::MoveNorthSouth => world::DeltaPosition {
+				x: 0f32,
+				y: self.value,
+			},
+		}
+	}
 }
 
 #[derive(Debug)]
@@ -442,6 +492,10 @@ fn should_compute_internal_connected_another_internal() {
 	assert_gt!(brain.internal[1].value, 1f32 - EPSILON);
 }
 
+///
+/// Input neurons
+///
+
 #[test]
 fn should_set_block_forward_true() {
 	let mut neuron = Neuron {
@@ -543,4 +597,219 @@ fn should_set_block_lateral_false() {
 	// nothing blocking the path laterally
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 0f32);
+}
+
+///
+/// Output neurons
+///
+
+#[test]
+fn should_want_move_forward() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveForward,
+		neuron_layer: NeuronLayer::Output,
+		value: 1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 1f32 }
+	);
+}
+
+#[test]
+fn should_want_move_not_forward() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveForward,
+		neuron_layer: NeuronLayer::Output,
+		value: 0f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_move_never_backward() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveForward,
+		neuron_layer: NeuronLayer::Output,
+		value: -1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_move_randomly() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveRandom,
+		neuron_layer: NeuronLayer::Output,
+		value: 1f32,
+	};
+
+	let delta = neuron.desired_move(&world::Direction::North);
+	assert_le!(delta.x, 1f32);
+	assert_ge!(delta.x, -1f32);
+	assert_le!(delta.y, 1f32);
+	assert_ge!(delta.y, -1f32);
+}
+
+#[test]
+fn should_want_move_reverse() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveReverse,
+		neuron_layer: NeuronLayer::Output,
+		value: 1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: -1f32 }
+	);
+}
+
+#[test]
+fn should_want_move_reverse_never_forward() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveReverse,
+		neuron_layer: NeuronLayer::Output,
+		value: -1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_move_right() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveLeftRight,
+		neuron_layer: NeuronLayer::Output,
+		value: 1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 1f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_move_left() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveLeftRight,
+		neuron_layer: NeuronLayer::Output,
+		value: -1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: -1f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_to_not_move_laterally() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveLeftRight,
+		neuron_layer: NeuronLayer::Output,
+		value: 0f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_to_move_east() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveEastWest,
+		neuron_layer: NeuronLayer::Output,
+		value: 1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 1f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_to_move_west() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveEastWest,
+		neuron_layer: NeuronLayer::Output,
+		value: -1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: -1f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_to_not_move_east_west() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveEastWest,
+		neuron_layer: NeuronLayer::Output,
+		value: 0f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_want_to_move_north() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveNorthSouth,
+		neuron_layer: NeuronLayer::Output,
+		value: 1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 1f32 }
+	);
+}
+
+#[test]
+fn should_want_to_move_south() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveNorthSouth,
+		neuron_layer: NeuronLayer::Output,
+		value: -1f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: -1f32 }
+	);
+}
+
+#[test]
+fn should_want_to_not_move_north_south() {
+	let neuron = Neuron {
+		neuron_type: NeuronType::MoveNorthSouth,
+		neuron_layer: NeuronLayer::Output,
+		value: 0f32,
+	};
+
+	assert_eq!(
+		neuron.desired_move(&world::Direction::North),
+		world::DeltaPosition { x: 0f32, y: 0f32 }
+	);
 }

@@ -30,4 +30,8 @@ impl Creature {
 		self.brain
 			.set_inputs(world, &self.position, &self.direction);
 	}
+
+	fn desired_move(&self) {
+		self.brain.desired_move(&self.direction);
+	}
 }
