@@ -5,12 +5,12 @@ use std::fmt::{self, Debug, Display, Formatter};
 pub mod brain;
 pub mod gene;
 
-const MUTATION_CHANCE: f32 = 0.1f32;
+const MUTATION_CHANCE: f32 = 0.01f32;
 
 #[derive(Debug, Clone)]
 pub struct Creature {
 	pub brain: brain::Brain,
-	genes: Vec<gene::Gene>,
+	pub genes: Vec<gene::Gene>,
 	pub position: world::Position,
 	direction: world::Direction,
 }
@@ -34,7 +34,6 @@ impl Display for Creature {
 impl Creature {
 	pub fn init_random(
 		num_internal_neurons: u8,
-		num_genes: u8,
 		world: &mut world::World,
 		gene_pool: &Vec<Vec<gene::Gene>>,
 	) -> Creature {
@@ -42,10 +41,21 @@ impl Creature {
 		let r: u16 = rng.gen();
 
 		// Get a random set of genes from the gene pool
-		let mut genes = gene_pool
+		let mut genes: Vec<gene::Gene> = Vec::new();
+		for gene in gene_pool
 			.get((r % gene_pool.len() as u16) as usize)
 			.unwrap()
-			.clone();
+		{
+			let mc: f32 = rng.gen();
+			if mc < MUTATION_CHANCE {
+				let mutation: u8 = rng.gen();
+				let mut new_gene = gene.clone();
+				new_gene.mutate(mutation % 32);
+				genes.push(new_gene);
+			} else {
+				genes.push(gene.clone());
+			}
+		}
 
 		let mut rng = rand::thread_rng();
 		let mut position: world::Position;
@@ -104,23 +114,5 @@ impl Creature {
 
 	pub fn desired_move(&self) -> world::DeltaPosition {
 		self.brain.desired_move(&self.direction)
-	}
-
-	pub fn get_repro_genetic(&self) -> Vec<gene::Gene> {
-		let mut rng = rand::thread_rng();
-
-		let mut genes: Vec<gene::Gene> = Vec::new();
-		for gene in self.genes.iter() {
-			let r: f32 = rng.gen();
-			if r < MUTATION_CHANCE {
-				let mutation: u8 = rng.gen();
-				let mut new_gene = gene.clone();
-				new_gene.mutate(mutation % 32);
-				genes.push(new_gene);
-			} else {
-				genes.push(gene.clone());
-			}
-		}
-		genes
 	}
 }

@@ -11,10 +11,10 @@ mod world;
 
 const NUM_INTERNAL_NEURONS: u8 = 1;
 const NUM_GENES: u8 = 10;
-const NUM_INITIAL_GENE_SEQUENCES: u8 = 200;
+const NUM_INITIAL_GENE_SEQUENCES: u8 = 100;
 
 const NUM_CREATURES: u16 = 200;
-const NUM_ITERATIONS: u16 = 300;
+const NUM_ITERATIONS: u16 = 100;
 const NUM_GENERATIONS: u16 = 10000;
 
 const GENERATION_TO_SAVE: u16 = 100;
@@ -39,7 +39,6 @@ fn main() {
         for _ in 0..NUM_CREATURES {
             creatures.push(creature::Creature::init_random(
                 NUM_INTERNAL_NEURONS,
-                NUM_GENES,
                 &mut world,
                 &gene_pool,
             ));
@@ -93,7 +92,7 @@ fn get_genetic_survivors(creatures: &Vec<creature::Creature>) -> Vec<Vec<creatur
     let mut gene_pool: Vec<Vec<creature::gene::Gene>> = Vec::new();
     for creature in creatures.iter() {
         if is_alive(&creature) {
-            gene_pool.push(creature.get_repro_genetic());
+            gene_pool.push(creature.genes.clone());
         }
     }
     if gene_pool.len() == 0 {
