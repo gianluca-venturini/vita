@@ -1,6 +1,7 @@
 use super::gene::Gene;
 use super::world;
 use super::Creature;
+use rand::prelude::*;
 use std::collections::HashMap;
 
 pub struct BrainDescription {
@@ -208,30 +209,42 @@ pub enum NeuronType {
 	BlockForward,
 	LastMovementY,
 	LastMovementX,
+	BorderDistanceNorthSouth,
+	BorderDistanceEastWest,
+	WordLocationNorthSouth,
+	WordLocationEastWest,
 
 	// Internal
 	Internal,
 
 	// Output
-	BorderDistanceNorthSouth,
-	BorderDistanceEastWest,
-	WordLocationNorthSouth,
-	WordLocationEastWest,
+	MoveForward,
+	MoveRandom,
+	MoveReverse,
+	MoveLeftRight,
+	MoveEastWest,
+	MoveNorthSouth,
 }
 
-const INPUT_NEURONS: [NeuronType; 5] = [
+const INPUT_NEURONS: [NeuronType; 9] = [
 	NeuronType::Random,
 	NeuronType::BlockLeftRight,
 	NeuronType::BlockForward,
 	NeuronType::LastMovementY,
 	NeuronType::LastMovementX,
-];
-
-const OUTPUT_NEURONS: [NeuronType; 4] = [
 	NeuronType::BorderDistanceNorthSouth,
 	NeuronType::BorderDistanceEastWest,
 	NeuronType::WordLocationNorthSouth,
 	NeuronType::WordLocationEastWest,
+];
+
+const OUTPUT_NEURONS: [NeuronType; 6] = [
+	NeuronType::MoveForward,
+	NeuronType::MoveRandom,
+	NeuronType::MoveReverse,
+	NeuronType::MoveLeftRight,
+	NeuronType::MoveEastWest,
+	NeuronType::MoveNorthSouth,
 ];
 
 #[derive(Debug, PartialEq)]
@@ -260,7 +273,11 @@ impl Neuron {
 		direction: &world::Direction,
 	) {
 		match self.neuron_type {
-			NeuronType::Random => {}
+			NeuronType::Random => {
+				let mut rng = rand::thread_rng();
+				let random_number: f32 = rng.gen(); // Generated number uniformly distributed [0, 1)
+				self.value = random_number * 2.0 - 1.0;
+			}
 			NeuronType::BlockLeftRight => {
 				let right = position.move_direction(&direction.rotate_right(), 1, &world.boundary);
 				let left = position.move_direction(&direction.rotate_left(), 1, &world.boundary);
@@ -280,14 +297,22 @@ impl Neuron {
 					self.value = 0f32;
 				}
 			}
+			// TODO: finish implementing the other input neurons
 			NeuronType::LastMovementY => {}
 			NeuronType::LastMovementX => {}
-
-			NeuronType::Internal => {}
 			NeuronType::BorderDistanceNorthSouth => {}
 			NeuronType::BorderDistanceEastWest => {}
 			NeuronType::WordLocationNorthSouth => {}
 			NeuronType::WordLocationEastWest => {}
+
+			NeuronType::Internal => {}
+
+			NeuronType::MoveForward => {}
+			NeuronType::MoveRandom => {}
+			NeuronType::MoveReverse => {}
+			NeuronType::MoveLeftRight => {}
+			NeuronType::MoveEastWest => {}
+			NeuronType::MoveNorthSouth => {}
 		};
 	}
 }
@@ -470,10 +495,6 @@ fn should_set_block_right_true() {
 	let mut world = world::World::init();
 	let position = world::Position { x: 1, y: 1 };
 	let direction = world::Direction::North;
-	let boundary = world::Size {
-		height: 128,
-		width: 128,
-	};
 
 	assert_eq!(neuron.value, 0f32);
 
