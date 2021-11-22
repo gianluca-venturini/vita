@@ -78,7 +78,6 @@ impl Gene {
 	}
 
 	pub fn get_destination_neuron_layer(&self) -> NeuronLayer {
-		println!("{}", self.destination & 0b10000000);
 		if self.destination & 0b10000000 == 0 {
 			return NeuronLayer::Internal;
 		} else {

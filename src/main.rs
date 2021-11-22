@@ -40,6 +40,9 @@ fn main() {
     }
     for i in 0..10 {
         println!("Iteration {:?}", i);
+        for creature in creatures.iter() {
+            println!("{}", creature);
+        }
         world.update_creatures_positions(&creatures);
         move_all_creatures(&mut world, &mut creatures);
     }

@@ -1,4 +1,7 @@
 use super::creature;
+use rand::distributions::{Distribution, Standard};
+use rand::thread_rng;
+use rand::Rng;
 use std::collections::HashMap;
 
 // The world coordinate system has (0, 0) on bottom left
@@ -40,6 +43,10 @@ impl World {
 	pub fn update_creatures_positions(&mut self, creatures: &Vec<creature::Creature>) {
 		self.coordinates.clear();
 		for creature in creatures.iter() {
+			if self.coordinates.contains_key(&creature.position) {
+				println!("Multiple creatures in the same position!");
+				panic!();
+			}
 			self.coordinates.insert(creature.position, creature.clone());
 		}
 	}
@@ -182,6 +189,19 @@ pub enum Direction {
 	South,
 	East,
 	West,
+}
+
+impl Distribution<Direction> for Standard {
+	fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Direction {
+		let mut rng = thread_rng();
+		match rng.gen_range(0..4) {
+			0 => Direction::North,
+			1 => Direction::South,
+			2 => Direction::East,
+			3 => Direction::West,
+			_ => Direction::North,
+		}
+	}
 }
 
 impl Direction {

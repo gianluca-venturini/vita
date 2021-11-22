@@ -1,14 +1,31 @@
+use super::world;
+use std::fmt::{self, Debug, Display, Formatter};
+
 pub mod brain;
 pub mod gene;
 
-use super::world;
-
-#[derive(std::fmt::Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Creature {
 	brain: brain::Brain,
 	genes: Vec<gene::Gene>,
 	pub position: world::Position,
 	direction: world::Direction,
+}
+
+impl Display for Creature {
+	fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+		write!(
+			f,
+			"{}: {:?}: {:?}",
+			self.genes
+				.iter()
+				.map(|gene| format!("{}", gene))
+				.collect::<Vec<String>>()
+				.join(" "),
+			self.position,
+			self.direction,
+		)
+	}
 }
 
 impl Creature {
@@ -22,7 +39,7 @@ impl Creature {
 			brain: brain::Brain::init(num_internal_neurons),
 			genes,
 			position: world::Position { x: 0, y: 0 }, // TODO: how is the random position set to avoid overlapping creatures?
-			direction: world::Direction::North,       // TODO: assign a random direction
+			direction: rand::random(),
 		}
 	}
 
