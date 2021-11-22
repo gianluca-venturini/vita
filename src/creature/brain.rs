@@ -28,6 +28,16 @@ pub struct Brain {
 	output: Vec<Neuron>,
 }
 
+impl Clone for Brain {
+	fn clone(&self) -> Brain {
+		Brain {
+			input: self.input.clone(),
+			internal: self.internal.clone(),
+			output: self.output.clone(),
+		}
+	}
+}
+
 impl Brain {
 	pub fn init(num_internal: u8) -> Brain {
 		Brain {

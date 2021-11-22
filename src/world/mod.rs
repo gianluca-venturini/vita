@@ -19,8 +19,9 @@ use std::collections::HashMap;
 // (0,0)
 
 pub struct World {
+	// Note that the world contains a copy of the creatures, not a reference to them.
+	// The function update_creatures_positions() should be called every time that the position change.
 	pub coordinates: HashMap<Position, creature::Creature>,
-	pub creature: Vec<creature::Creature>,
 	pub boundary: Size,
 }
 
@@ -28,12 +29,37 @@ impl World {
 	pub fn init() -> World {
 		World {
 			coordinates: HashMap::new(),
-			creature: Vec::new(),
 			boundary: Size {
 				height: 128,
 				width: 128,
 			},
 		}
+	}
+
+	// This function resets the world in a state coherent with the creature position.
+	pub fn update_creatures_positions(&mut self, creatures: &Vec<creature::Creature>) {
+		self.coordinates.clear();
+		for creature in creatures.iter() {
+			self.coordinates.insert(creature.position, creature.clone());
+		}
+	}
+
+	// This function encodes all the complexity of the physics in the world::World.
+	// This function returns the next position that will be assumed by the entity.
+	// The world needs to know already that some entity is in that position, otherwise will panic.
+	pub fn move_creature(
+		&mut self,
+		current_position: &Position,
+		delta: &DeltaPosition,
+	) -> Position {
+		let creature = self.coordinates.get(current_position);
+		if creature.is_none() {
+			println!("No entity found in world position {:?}", current_position);
+			panic!("Position not found");
+		}
+		// creature.unwrap()
+		// next_position = current_position.move_delta(delta)
+		*current_position
 	}
 }
 
@@ -43,7 +69,7 @@ pub struct Size {
 	pub height: u16,
 }
 
-#[derive(Debug, std::hash::Hash, PartialEq, std::cmp::Eq)]
+#[derive(Debug, std::hash::Hash, PartialEq, std::cmp::Eq, Clone, Copy)]
 pub struct Position {
 	pub x: u16,
 	pub y: u16,
@@ -95,6 +121,15 @@ impl Position {
 			}
 		}
 	}
+
+	pub fn move_delta(&self, delta: &DeltaPosition, max_step: u16) -> Position {
+		let x = (self.x as f32 + delta.x.clamp(-(max_step as f32), max_step as f32)).floor();
+		let y = (self.y as f32 + delta.y.clamp(-(max_step as f32), max_step as f32)).floor();
+		Position {
+			x: if x > 0f32 { x as u16 } else { 0 },
+			y: if y > 0f32 { y as u16 } else { 0 },
+		}
+	}
 }
 
 #[derive(Debug, PartialEq)]
@@ -126,7 +161,7 @@ impl DeltaPosition {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Direction {
 	North,
 	South,
@@ -218,5 +253,13 @@ fn should_delta_move_correctly() {
 	assert_eq!(
 		DeltaPosition { x: 0f32, y: 0f32 }.move_direction(&Direction::West, 1f32),
 		DeltaPosition { x: -1f32, y: 0f32 }
+	);
+}
+
+#[test]
+fn should_move_position_delta() {
+	assert_eq!(
+		Position { x: 0u16, y: 0u16 }.move_delta(&DeltaPosition { x: 1f32, y: 0f32 }, 1),
+		Position { x: 1u16, y: 0u16 }
 	);
 }

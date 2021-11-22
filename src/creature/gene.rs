@@ -2,6 +2,7 @@ use super::brain::{BrainDescription, NeuronDescription, NeuronLayer};
 use rand::prelude::*;
 use std::fmt::{self, Debug, Display, Formatter};
 
+#[derive(Clone, Copy)]
 pub struct Gene {
 	// source neuron
 	source: u8,

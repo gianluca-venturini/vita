@@ -3,16 +3,16 @@ pub mod gene;
 
 use super::world;
 
-#[derive(std::fmt::Debug)]
+#[derive(std::fmt::Debug, Clone)]
 pub struct Creature {
 	brain: brain::Brain,
 	genes: Vec<gene::Gene>,
-	position: world::Position,
+	pub position: world::Position,
 	direction: world::Direction,
 }
 
 impl Creature {
-	fn init_random(num_internal_neurons: u8, num_genes: u8) -> Creature {
+	pub fn init_random(num_internal_neurons: u8, num_genes: u8) -> Creature {
 		let mut genes = Vec::new();
 		for _ in 0..num_genes {
 			genes.push(gene::Gene::init_random())
@@ -26,12 +26,16 @@ impl Creature {
 		}
 	}
 
-	fn set_inputs(&mut self, world: &world::World) {
+	pub fn set_inputs(&mut self, world: &world::World) {
 		self.brain
 			.set_inputs(world, &self.position, &self.direction);
 	}
 
-	fn desired_move(&self) {
-		self.brain.desired_move(&self.direction);
+	pub fn compute_next_state(&mut self) {
+		self.brain.compute_neurons_state(&self.genes);
+	}
+
+	pub fn desired_move(&self) -> world::DeltaPosition {
+		self.brain.desired_move(&self.direction)
 	}
 }

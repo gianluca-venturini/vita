@@ -27,4 +27,18 @@ fn main() {
             -1
         )
     );
+    let mut world = world::World::init();
+    let mut creatures: Vec<creature::Creature> = Vec::new();
+    move_all_creatures(&mut world, &mut creatures);
+}
+
+fn move_all_creatures(world: &mut world::World, creatures: &mut Vec<creature::Creature>) {
+    world.update_creatures_positions(creatures);
+    for creature in creatures.iter_mut() {
+        creature.set_inputs(&world);
+        creature.compute_next_state();
+    }
+    for creature in creatures.iter_mut() {
+        let delta_position = creature.desired_move();
+    }
 }
