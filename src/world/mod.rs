@@ -47,19 +47,28 @@ impl World {
 	// This function encodes all the complexity of the physics in the world::World.
 	// This function returns the next position that will be assumed by the entity.
 	// The world needs to know already that some entity is in that position, otherwise will panic.
-	pub fn move_creature(
-		&mut self,
-		current_position: &Position,
-		delta: &DeltaPosition,
-	) -> Position {
-		let creature = self.coordinates.get(current_position);
-		if creature.is_none() {
-			println!("No entity found in world position {:?}", current_position);
+	// When moving the creatures the world will update in place its knowledge of where the creatures are.
+	pub fn move_creature(&mut self, creature: &mut creature::Creature) {
+		let creature_in_world = self.coordinates.get(&creature.position);
+		if creature_in_world.is_none() {
+			println!("No entity found in world position {:?}. How did the world state got out of sync with creatures?", creature.position);
 			panic!("Position not found");
 		}
-		// creature.unwrap()
-		// next_position = current_position.move_delta(delta)
-		*current_position
+		let next_position = creature.position.move_delta(&creature.desired_move(), 1);
+		if self.coordinates.contains_key(&next_position) {
+			// The creature can't move in an already occupied spot
+			return;
+		}
+		if !self.boundary.inside(&next_position) {
+			// The move should stay inside the boundary
+			return;
+		}
+		// Add here any other physical rule that may prevent a creature from moving
+
+		// The move is legal and the creature is updated together with the state of the world
+		self.coordinates.remove(&creature.position);
+		creature.position = next_position;
+		self.coordinates.insert(creature.position, creature.clone());
 	}
 }
 
@@ -67,6 +76,12 @@ impl World {
 pub struct Size {
 	pub width: u16,
 	pub height: u16,
+}
+
+impl Size {
+	pub fn inside(&self, position: &Position) -> bool {
+		position.x < self.width && position.y < self.height
+	}
 }
 
 #[derive(Debug, std::hash::Hash, PartialEq, std::cmp::Eq, Clone, Copy)]
