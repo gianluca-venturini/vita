@@ -1,6 +1,10 @@
 #[macro_use]
 extern crate more_asserts;
+extern crate image;
 extern crate rand;
+use std::fs;
+
+use image::{GenericImage, GenericImageView, ImageBuffer, RgbImage};
 
 mod creature;
 mod world;
@@ -39,12 +43,28 @@ fn main() {
             &mut world,
         ));
     }
-    for i in 0..2 {
-        println!("Iteration {:?}", i);
-        for creature in creatures.iter() {
-            println!("{}", creature);
+
+    for generation in 0..2 {
+        fs::create_dir_all(format!("./generations/{:5}", generation));
+        for iteration in 0..100 {
+            println!("Iteration {:?}", iteration);
+            let img = ImageBuffer::from_fn(128, 128, |x, y| {
+                if world.coordinates.contains_key(&world::Position {
+                    x: x as u16,
+                    y: y as u16,
+                }) {
+                    image::Luma([0u8])
+                } else {
+                    image::Luma([255u8])
+                }
+            });
+            img.save(format!("generations/{:5}/{:5}.png", 0, iteration))
+                .unwrap();
+            for creature in creatures.iter() {
+                println!("{}", creature);
+            }
+            move_all_creatures(&mut world, &mut creatures);
         }
-        move_all_creatures(&mut world, &mut creatures);
     }
 }
 
