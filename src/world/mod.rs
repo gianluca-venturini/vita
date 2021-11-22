@@ -39,29 +39,17 @@ impl World {
 		}
 	}
 
-	// This function resets the world in a state coherent with the creature position.
-	pub fn update_creatures_positions(&mut self, creatures: &Vec<creature::Creature>) {
-		self.coordinates.clear();
-		for creature in creatures.iter() {
-			if self.coordinates.contains_key(&creature.position) {
-				println!("Multiple creatures in the same position!");
-				panic!();
-			}
-			self.coordinates.insert(creature.position, creature.clone());
-		}
-	}
-
 	// This function encodes all the complexity of the physics in the world::World.
 	// This function returns the next position that will be assumed by the entity.
 	// The world needs to know already that some entity is in that position, otherwise will panic.
 	// When moving the creatures the world will update in place its knowledge of where the creatures are.
 	pub fn move_creature(&mut self, creature: &mut creature::Creature) {
-		let creature_in_world = self.coordinates.get(&creature.position);
-		if creature_in_world.is_none() {
+		if !self.coordinates.contains_key(&creature.position) {
 			println!("No entity found in world position {:?}. How did the world state got out of sync with creatures?", creature.position);
 			panic!("Position not found");
 		}
-		let next_position = creature.position.move_delta(&creature.desired_move(), 1);
+		let delta = creature.desired_move();
+		let next_position = creature.position.move_delta(&delta, 1);
 		if self.coordinates.contains_key(&next_position) {
 			// The creature can't move in an already occupied spot
 			return;
@@ -193,8 +181,8 @@ pub enum Direction {
 
 impl Distribution<Direction> for Standard {
 	fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Direction {
-		let mut rng = thread_rng();
-		match rng.gen_range(0..4) {
+		let r: u32 = rng.gen();
+		match r % 4 {
 			0 => Direction::North,
 			1 => Direction::South,
 			2 => Direction::East,

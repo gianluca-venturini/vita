@@ -116,7 +116,7 @@ impl Brain {
 
 	pub fn desired_move(&self, direction: &world::Direction) -> world::DeltaPosition {
 		let mut delta = world::DeltaPosition { x: 0f32, y: 0f32 };
-		for neuron in self.input.iter() {
+		for neuron in self.output.iter() {
 			let delta_neuron = neuron.desired_move(direction);
 			delta.x += delta_neuron.x;
 			delta.y += delta_neuron.y;
@@ -526,7 +526,7 @@ fn should_set_block_forward_true() {
 	// one creature blocking the path forward
 	world
 		.coordinates
-		.insert(world::Position { x: 1, y: 2 }, Creature::init_random(0, 0));
+		.insert(world::Position { x: 1, y: 2 }, Creature::init(0, 0));
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 1f32);
 }
@@ -565,7 +565,7 @@ fn should_set_block_right_true() {
 	// one creature blocking the path left
 	world
 		.coordinates
-		.insert(world::Position { x: 2, y: 1 }, Creature::init_random(0, 0));
+		.insert(world::Position { x: 2, y: 1 }, Creature::init(0, 0));
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 1f32);
 }
@@ -586,7 +586,7 @@ fn should_set_block_left_true() {
 	// one creature blocking the path left
 	world
 		.coordinates
-		.insert(world::Position { x: 0, y: 1 }, Creature::init_random(0, 0));
+		.insert(world::Position { x: 0, y: 1 }, Creature::init(0, 0));
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 1f32);
 }
