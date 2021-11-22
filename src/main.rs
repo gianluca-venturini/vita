@@ -45,7 +45,7 @@ fn main() {
     }
 
     for generation in 0..2 {
-        fs::create_dir_all(format!("./generations/{:5}", generation));
+        fs::create_dir_all(format!("./generations/{:04}", generation));
         for iteration in 0..100 {
             println!("Iteration {:?}", iteration);
             let img = ImageBuffer::from_fn(128, 128, |x, y| {
@@ -58,8 +58,11 @@ fn main() {
                     image::Luma([255u8])
                 }
             });
-            img.save(format!("generations/{:5}/{:5}.png", 0, iteration))
-                .unwrap();
+            img.save(format!(
+                "generations/{:04}/{:04}.png",
+                generation, iteration
+            ))
+            .unwrap();
             for creature in creatures.iter() {
                 println!("{}", creature);
             }
