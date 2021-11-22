@@ -262,12 +262,10 @@ impl Neuron {
 		match self.neuron_type {
 			NeuronType::Random => {}
 			NeuronType::BlockLeftRight => {
-				if world
-					.coordinates
-					.contains_key(&position.move_direction(&direction.rotate_right(), 1))
-					|| world
-						.coordinates
-						.contains_key(&position.move_direction(&direction.rotate_left(), 1))
+				let right = position.move_direction(&direction.rotate_right(), 1, &world.boundary);
+				let left = position.move_direction(&direction.rotate_left(), 1, &world.boundary);
+				if (right.is_some() && world.coordinates.contains_key(&right.unwrap()))
+					|| (left.is_some() && world.coordinates.contains_key(&left.unwrap()))
 				{
 					self.value = 1f32;
 				} else {
@@ -275,10 +273,8 @@ impl Neuron {
 				}
 			}
 			NeuronType::BlockForward => {
-				if world
-					.coordinates
-					.contains_key(&position.move_direction(direction, 1))
-				{
+				let forward = position.move_direction(direction, 1, &world.boundary);
+				if forward.is_some() && world.coordinates.contains_key(&forward.unwrap()) {
 					self.value = 1f32;
 				} else {
 					self.value = 0f32;
@@ -431,6 +427,10 @@ fn should_set_block_forward_true() {
 	let mut world = world::World::init();
 	let position = world::Position { x: 1, y: 1 };
 	let direction = world::Direction::North;
+	let boundary = world::Size {
+		height: 128,
+		width: 128,
+	};
 
 	assert_eq!(neuron.value, 0f32);
 
@@ -470,6 +470,10 @@ fn should_set_block_right_true() {
 	let mut world = world::World::init();
 	let position = world::Position { x: 1, y: 1 };
 	let direction = world::Direction::North;
+	let boundary = world::Size {
+		height: 128,
+		width: 128,
+	};
 
 	assert_eq!(neuron.value, 0f32);
 

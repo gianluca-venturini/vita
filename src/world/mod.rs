@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub struct World {
 	pub coordinates: HashMap<Position, creature::Creature>,
 	pub creature: Vec<creature::Creature>,
+	pub boundary: Size,
 }
 
 impl World {
@@ -13,8 +14,18 @@ impl World {
 		World {
 			coordinates: HashMap::new(),
 			creature: Vec::new(),
+			boundary: Size {
+				height: 128,
+				width: 128,
+			},
 		}
 	}
+}
+
+#[derive(Debug)]
+pub struct Size {
+	pub width: u16,
+	pub height: u16,
 }
 
 #[derive(Debug, std::hash::Hash, PartialEq, std::cmp::Eq)]
@@ -24,24 +35,49 @@ pub struct Position {
 }
 
 impl Position {
-	pub fn move_direction(&self, direction: &Direction, step: u16) -> Position {
+	pub fn move_direction(
+		&self,
+		direction: &Direction,
+		step: u16,
+		boundary: &Size,
+	) -> Option<Position> {
 		match direction {
-			Direction::North => Position {
-				x: self.x,
-				y: self.y + step,
-			},
-			Direction::South => Position {
-				x: self.x,
-				y: self.y - step,
-			},
-			Direction::East => Position {
-				x: self.x + step,
-				y: self.y,
-			},
-			Direction::West => Position {
-				x: self.x - step,
-				y: self.y,
-			},
+			Direction::North => {
+				if self.y + step >= boundary.height {
+					return None;
+				}
+				Option::Some(Position {
+					x: self.x,
+					y: self.y + step,
+				})
+			}
+			Direction::South => {
+				if (self.y as i16 - step as i16) < 0 {
+					return None;
+				}
+				Option::Some(Position {
+					x: self.x,
+					y: self.y - step,
+				})
+			}
+			Direction::East => {
+				if self.x + step >= boundary.width {
+					return None;
+				}
+				Option::Some(Position {
+					x: self.x + step,
+					y: self.y,
+				})
+			}
+			Direction::West => {
+				if (self.x as i16 - step as i16) < 0 {
+					return None;
+				}
+				Option::Some(Position {
+					x: self.x - step,
+					y: self.y,
+				})
+			}
 		}
 	}
 }
@@ -71,24 +107,52 @@ impl Direction {
 
 #[test]
 fn should_move_correctly() {
+	let boundary = Size {
+		width: 128,
+		height: 128,
+	};
 	assert_eq!(
-		Position { x: 1, y: 1 }.move_direction(&Direction::North, 1),
-		Position { x: 1, y: 2 }
+		Position { x: 1, y: 1 }.move_direction(&Direction::North, 1, &boundary),
+		Some(Position { x: 1, y: 2 })
 	);
 	assert_eq!(
-		Position { x: 1, y: 1 }.move_direction(&Direction::South, 1),
-		Position { x: 1, y: 0 }
+		Position { x: 1, y: 1 }.move_direction(&Direction::South, 1, &boundary),
+		Some(Position { x: 1, y: 0 })
 	);
 	assert_eq!(
-		Position { x: 1, y: 1 }.move_direction(&Direction::East, 1),
-		Position { x: 2, y: 1 }
+		Position { x: 1, y: 1 }.move_direction(&Direction::East, 1, &boundary),
+		Some(Position { x: 2, y: 1 })
 	);
 	assert_eq!(
-		Position { x: 1, y: 1 }.move_direction(&Direction::West, 1),
-		Position { x: 0, y: 1 }
+		Position { x: 1, y: 1 }.move_direction(&Direction::West, 1, &boundary),
+		Some(Position { x: 0, y: 1 })
 	);
 	assert_eq!(
-		Position { x: 1, y: 1 }.move_direction(&Direction::North, 2),
-		Position { x: 1, y: 3 }
+		Position { x: 1, y: 1 }.move_direction(&Direction::North, 2, &boundary),
+		Some(Position { x: 1, y: 3 })
+	);
+}
+
+#[test]
+fn should_move_only_inside_boundary() {
+	let boundary = Size {
+		width: 128,
+		height: 128,
+	};
+	assert_eq!(
+		Position { x: 127, y: 127 }.move_direction(&Direction::North, 1, &boundary),
+		None
+	);
+	assert_eq!(
+		Position { x: 0, y: 0 }.move_direction(&Direction::South, 1, &boundary),
+		None
+	);
+	assert_eq!(
+		Position { x: 127, y: 127 }.move_direction(&Direction::East, 1, &boundary),
+		None
+	);
+	assert_eq!(
+		Position { x: 0, y: 0 }.move_direction(&Direction::West, 1, &boundary),
+		None
 	);
 }
