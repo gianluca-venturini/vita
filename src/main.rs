@@ -32,13 +32,13 @@ fn main() {
     );
     let mut world = world::World::init();
     let mut creatures: Vec<creature::Creature> = Vec::new();
-    for _ in [0..10] {
+    for _ in 0..10 {
         creatures.push(creature::Creature::init_random(
             NUM_INTERNAL_NEURONS,
             NUM_GENES,
         ));
     }
-    for i in [0..10] {
+    for i in 0..10 {
         println!("Iteration {:?}", i);
         world.update_creatures_positions(&creatures);
         move_all_creatures(&mut world, &mut creatures);

@@ -116,7 +116,7 @@ impl Gene {
 	) -> NeuronDescription {
 		let neuron_number = match neuron_layer {
 			NeuronLayer::Input => (raw_number & 0b01111111) % brain.num_input,
-			NeuronLayer::Internal => (raw_number & 0b01111111) % brain.num_input,
+			NeuronLayer::Internal => (raw_number & 0b01111111) % brain.num_internal,
 			NeuronLayer::Output => (raw_number & 0b01111111) % brain.num_output,
 		};
 		NeuronDescription {
