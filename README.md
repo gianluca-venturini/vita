@@ -26,8 +26,10 @@ fn is_alive(creature: &creature::Creature) -> bool {
 - At the last iteration all the creatures that don't satisfy `is_alive()` are killed, the gene sequences of the remaining creatures are sampled and will form the gene pool for the next generation.
 - The next generation of creatures is spawned using the gene pool, occasional mutations may happen at this moment.
 - At the end of the iterations for the first generation, the creatures are quite dumb.
+
 ![Generation 0](https://github.com//gianluca-venturini/vita/blob/main/images/0_0999.png?raw=true)
 - The generation 100 is already smart enough that most creatures understand that they need to move toward the center of the world in order to survive.
+
 ![Generation 100](https://github.com//gianluca-venturini/vita/blob/main/images/100_0999.png?raw=true)
 
 ## Credits
