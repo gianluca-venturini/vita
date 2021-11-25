@@ -11,9 +11,9 @@ mod world;
 
 const NUM_INTERNAL_NEURONS: u8 = 1;
 const NUM_GENES: u8 = 10;
-const NUM_INITIAL_GENE_SEQUENCES: u8 = 100;
+const NUM_INITIAL_GENE_SEQUENCES: u8 = 200;
 
-const NUM_CREATURES: u16 = 200;
+const NUM_CREATURES: u16 = 400;
 const NUM_ITERATIONS: u16 = 1000;
 const NUM_GENERATIONS: u16 = 10000;
 
@@ -103,8 +103,8 @@ fn get_genetic_survivors(creatures: &Vec<creature::Creature>) -> Vec<Vec<creatur
 
 fn is_alive(creature: &creature::Creature) -> bool {
     // only survive staying in the center
-    creature.position.x > 50
-        && creature.position.x > 70
-        && creature.position.y > 50
-        && creature.position.y > 70
+    creature.position.x > 30
+        && creature.position.x < 90
+        && creature.position.y > 30
+        && creature.position.y < 90
 }
