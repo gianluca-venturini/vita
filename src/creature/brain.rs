@@ -321,10 +321,22 @@ impl Neuron {
 			// TODO: finish implementing the other input neurons
 			NeuronType::LastMovementY => {}
 			NeuronType::LastMovementX => {}
-			NeuronType::BorderDistanceNorthSouth => {}
-			NeuronType::BorderDistanceEastWest => {}
-			NeuronType::WordLocationNorthSouth => {}
-			NeuronType::WordLocationEastWest => {}
+			NeuronType::BorderDistanceNorthSouth => {
+				self.value = ((world.boundary.height as f32) / 2f32 - position.y as f32).abs()
+					/ world.boundary.height as f32
+					* 4f32 - 1f32;
+			}
+			NeuronType::BorderDistanceEastWest => {
+				self.value = ((world.boundary.width as f32) / 2f32 - position.x as f32).abs()
+					/ world.boundary.width as f32
+					* 4f32 - 1f32;
+			}
+			NeuronType::WordLocationNorthSouth => {
+				self.value = position.y as f32 / world.boundary.height as f32 * 2f32 - 1f32;
+			}
+			NeuronType::WordLocationEastWest => {
+				self.value = position.x as f32 / (world.boundary.width as f32) * 2f32 - 1f32;
+			}
 
 			NeuronType::Internal => {}
 
@@ -607,6 +619,194 @@ fn should_set_block_lateral_false() {
 	// nothing blocking the path laterally
 	neuron.set_from_world(&world, &position, &direction);
 	assert_eq!(neuron.value, 0f32);
+}
+
+#[test]
+fn should_set_location_north_south_beginning() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::WordLocationNorthSouth,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 0, y: 0 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, -1f32);
+}
+
+#[test]
+fn should_set_location_north_south_end() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::WordLocationNorthSouth,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position {
+		x: 0,
+		y: world.boundary.height,
+	};
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_location_east_west_beginning() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::WordLocationEastWest,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 0, y: 0 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, -1f32);
+}
+
+#[test]
+fn should_set_location_east_west_end() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::WordLocationEastWest,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position {
+		x: world.boundary.width,
+		y: 0,
+	};
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_border_distance_north_south_start() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BorderDistanceNorthSouth,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 0, y: 0 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_border_distance_north_south_end() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BorderDistanceNorthSouth,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position {
+		x: 0,
+		y: world.boundary.height,
+	};
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_border_distance_north_south_middle() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BorderDistanceNorthSouth,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position {
+		x: 0,
+		y: world.boundary.height / 2u16,
+	};
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_lt!(neuron.value, -1f32 + 2f32 * EPSILON);
+}
+
+#[test]
+fn should_set_border_distance_east_west_start() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BorderDistanceEastWest,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position { x: 0, y: 0 };
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_border_distance_east_west_end() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BorderDistanceEastWest,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position {
+		x: world.boundary.width,
+		y: 0,
+	};
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_eq!(neuron.value, 1f32);
+}
+
+#[test]
+fn should_set_border_distance_east_west_middle() {
+	let mut neuron = Neuron {
+		neuron_type: NeuronType::BorderDistanceEastWest,
+		neuron_layer: NeuronLayer::Input,
+		value: 0f32,
+	};
+	let world = world::World::init();
+	let position = world::Position {
+		x: world.boundary.width / 2u16,
+		y: 0,
+	};
+	let direction = world::Direction::North;
+
+	assert_eq!(neuron.value, 0f32);
+
+	neuron.set_from_world(&world, &position, &direction);
+	assert_lt!(neuron.value, -1f32 + 2f32 * EPSILON);
 }
 
 ///

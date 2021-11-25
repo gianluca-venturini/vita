@@ -71,10 +71,9 @@ fn main() {
             }
 
             move_all_creatures(&mut world, &mut creatures);
-
-            // Kill creatures and extract genes of survivors
-            gene_pool = get_genetic_survivors(&creatures);
         }
+        // Kill creatures and extract genes of survivors
+        gene_pool = get_genetic_survivors(&creatures);
     }
 }
 
@@ -103,5 +102,9 @@ fn get_genetic_survivors(creatures: &Vec<creature::Creature>) -> Vec<Vec<creatur
 }
 
 fn is_alive(creature: &creature::Creature) -> bool {
-    creature.position.x > 100
+    // only survive staying in the center
+    creature.position.x > 50
+        && creature.position.x > 70
+        && creature.position.y > 50
+        && creature.position.y > 70
 }
